@@ -13,28 +13,35 @@ library(lattice)
 
 ## <span style="color:#8f246b"> Loading and preprocessing the data </span>
 
-Firt the data was download from url <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip" target="_blank" rel="noopener nofollow">Activity monitoring data</a> and read csv data from zip file. Two dataset are defined, first with the original data and the second without missing values, aditionaly the date column was transform into a format suitable for analysis.
+First the data was download from url <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip" target="_blank" rel="noopener nofollow">Activity monitoring data</a> and read the csv data file from the zip file and transform the date into a readable format for analysis.
 
 ```{r download}
 download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip","activity.zip")
 activity_read<-read.csv(unz("activity.zip","activity.csv"),header=TRUE,sep=",")
 activity_read$date<-as.Date(activity_read$date)
+
+summary(activity_read)
+head(activity_read)
+```
+
+Two dataset are defined, <span style="color:#8f246b"> activity_read </span> with the original data and <span style="color:#8f246b"> activity_data </span> a subset without missing values.
+
+```{r datasetwithoutmissing}
 activity_data<-subset(activity_read,!is.na(activity_read$steps))
 
 summary(activity_data)
 head(activity_data)
 ```
 
-
 ## <span style="color:#8f246b"> What is mean total number of steps taken per day? </span>
 
-First calculate the number of steps by day.
+First calculate the total number of steps by day.
 
 ```{r stepsbyday}
 steps_by_day<-aggregate(activity_data$steps,list(activity_data$date),sum)
 ```
 
-Plot the histogram of the total number of steps taken each day.
+Plotting the histogram for the result of the total number of steps taken each day.
 
 ```{r histstepsbyday, echo=FALSE}
 hist(steps_by_day$x,breaks=10,main="Total number of steps taken each day",col="#800060",xlab="Total Steps",ylab="Frequency")
@@ -53,7 +60,7 @@ median(steps_by_day$x)
 
 ## <span style="color:#8f246b"> What is the average daily activity pattern? </span>
 
-Calculate the mean for each time interval.
+First calculate the mean for each time interval.
 
 ```{r stepsby5min}
 steps_by_5min<-aggregate(activity_data$steps,list(activity_data$interval),mean)
@@ -62,7 +69,7 @@ steps_by_5min<-aggregate(activity_data$steps,list(activity_data$interval),mean)
 Plot the time series of the 5-minute interval and the average number of steps taken across all days.
 
 ```{r linestepsby5min, echo=FALSE}
-ggplot(steps_by_5min,aes(x=Group.1,y=x))+geom_line(color="#800060",linetype=1,size=1)+ggtitle("Average steps in 5-minute interval")+ylab("Mean Steps")+xlab("5-minuts Interval")
+ggplot(steps_by_5min,aes(x=Group.1,y=x))+geom_line(color="#800060",linetype=1,size=0.5)+ggtitle("Average steps in 5-minute interval")+ylab("Mean Steps")+xlab("5-minuts Interval")
 ```
 
 The 5-minute interval that contains the maximum number of steps is
