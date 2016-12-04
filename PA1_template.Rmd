@@ -1,25 +1,143 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: <span style="color:#8f246b"> Reproducible Research Course Project Week 2 </span>
+author: "Aixa Rodriguez Salan"
+date: "3 de diciembre de 2016"
+output: html_document 
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(lattice)
+```
 
-## Loading and preprocessing the data
+## <span style="color:#8f246b"> Loading and preprocessing the data </span>
+
+Firt the data was download from url <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip" target="_blank" rel="noopener nofollow">Activity monitoring data</a> and read csv data from zip file. Two dataset are defined, first with the original data and the second without missing values, aditionaly the date column was transform into a format suitable for analysis.
+
+```{r download}
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip","activity.zip")
+activity_read<-read.csv(unz("activity.zip","activity.csv"),header=TRUE,sep=",")
+activity_read$date<-as.Date(activity_read$date)
+activity_data<-subset(activity_read,!is.na(activity_read$steps))
+
+summary(activity_data)
+head(activity_data)
+```
 
 
+## <span style="color:#8f246b"> What is mean total number of steps taken per day? </span>
 
-## What is mean total number of steps taken per day?
+First calculate the number of steps by day.
+
+```{r stepsbyday}
+steps_by_day<-aggregate(activity_data$steps,list(activity_data$date),sum)
+```
+
+Plot the histogram of the total number of steps taken each day.
+
+```{r histstepsbyday, echo=FALSE}
+hist(steps_by_day$x,breaks=10,main="Total number of steps taken each day",col="#800060",xlab="Total Steps",ylab="Frequency")
+```
+
+And finally calculate the mean and median of the number of steps taken by day.
+
+```{r meanstepsbyday}
+#Mean:
+mean(steps_by_day$x)
+
+#Median:
+median(steps_by_day$x)
+```
 
 
+## <span style="color:#8f246b"> What is the average daily activity pattern? </span>
 
-## What is the average daily activity pattern?
+Calculate the mean for each time interval.
 
+```{r stepsby5min}
+steps_by_5min<-aggregate(activity_data$steps,list(activity_data$interval),mean)
+```
 
+Plot the time series of the 5-minute interval and the average number of steps taken across all days.
 
-## Imputing missing values
+```{r linestepsby5min, echo=FALSE}
+ggplot(steps_by_5min,aes(x=Group.1,y=x))+geom_line(color="#800060",linetype=1,size=1)+ggtitle("Average steps in 5-minute interval")+ylab("Mean Steps")+xlab("5-minuts Interval")
+```
 
+The 5-minute interval that contains the maximum number of steps is
 
+```{r intstepsby5min}
+#Interval:
+steps_by_5min[with(steps_by_5min,x==max(steps_by_5min$x)),]$Group.1
+```
 
-## Are there differences in activity patterns between weekdays and weekends?
+And the max average it's
+
+```{r maxstepsby5min}
+#Max:
+max(steps_by_5min$x)
+```
+
+## <span style="color:#8f246b"> Imputing missing values </span>
+
+The total number of missing values in the dataset are
+
+```{r countmissingvalues}
+#Total:
+nrow(activity_read)-nrow(activity_data)
+```
+
+Filling all the missing data with the mean of the interval
+
+```{r fillmissingvalues}
+activity_read$mean<-tapply(activity_data$steps,activity_data$interval,mean)
+activity_read$steps[is.na(activity_read$steps)]<-activity_read$mean[is.na(activity_read$steps)]
+activity_fill<-activity_read[,c("steps","interval","date")]
+```
+
+With the new dataset filled first calculate the number of steps by day.
+
+```{r fillstepsbyday}
+steps_by_fillday<-aggregate(activity_fill$steps,list(activity_fill$date),sum)
+```
+
+Plot the histogram of the total number of steps taken each day using filled dataset.
+
+```{r histfillstepsbyday, echo=FALSE}
+hist(steps_by_fillday$x,breaks=10,main="Total number of steps taken each day",col="#800060",xlab="Total Steps",ylab="Frequency")
+```
+
+And finally calculate the mean and median of the number of steps taken by day with the filled dataset.
+
+```{r meanfillstepsbyday}
+#Mean:
+mean(steps_by_fillday$x)
+
+#Median:
+median(steps_by_fillday$x)
+```
+
+Comparing the 10,766.19 (mean) and 10,765 (median) that we get from the first dataset excluding missing data and the 10,766.19 (mean) and 10,766.19 (median) from imputing missing data on estimates of total intervals of steps the difference between both are minimal and has not impact.
+
+## <span style="color:#8f246b"> Are there differences in activity patterns between weekdays and weekends? </span>
+
+First add the new columns to know if the days are weekdays or weekend
+
+```{r weekdataset}
+activity_fill$weekday<-"weekday";
+activity_fill$weekday[grep("domingo|sábado|sunday|saturday",weekdays(activity_fill$date))]<-"weekend";
+activity_fill$weekday<-as.factor(activity_fill$weekday)
+```
+
+Calculating the mean of the data by type of day and 5-min interval
+
+```{r weekdatamean}
+activity_week_mean<-aggregate(steps~weekday+interval,data=activity_fill,FUN=mean)
+```
+
+Filling all the missing data with the mean of the interval
+
+```{r weekplot, echo=FALSE}
+xyplot(steps ~ interval | factor(weekday),data=activity_week_mean,layout=c(1,2),type="l",col=c("#800060"),main="Average number of steps in 5-min intervals weekends and week days",ylab="Steps",xlab="Interval",par.settings = list(strip.background=list(col="#ffccf2")))
+```
